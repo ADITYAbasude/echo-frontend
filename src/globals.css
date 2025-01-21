@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+@import "video.js/dist/video-js.css";
+@import 'video.js/dist/video-js.css';
+@import '@silvermine/videojs-quality-selector/dist/css/quality-selector.css';
+
+@layer base {
+  :root {
+
+    background-color: #1a1a1a;
+
+    --swiper-theme-color: #059467;
+
+    --background: 0deg 0% 7.06%; /* dark green black */
+    --foreground: 210 40% 98%; /* Light text color */
+
+    --card: 0 0% 100%;
+    --card-background: #181818;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: #059467;
+    --primary-foreground: 210 40% 98%;
+    --primary-opacity-10: rgba(5, 148, 103, 0.1);
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --danger: #ff3b30;
+
+    --radius: 0.5rem;
+
+    --popup-background: rgba(0, 0, 0, 0.95);
+    --popup-blur: blur(12px);
+
+    --custom-background: #1a1a1a;
+    --custom-foreground: #ffffff;
+    --custom-primary: #059467;
+    --custom-secondary: #222222;
+
+    --videoBackground: #1a1a1a;
+    --videoForeground: #ffffff;
+    --videoControlBar: rgba(0, 0, 0, 0.7);
+    --videoControlBarHover: rgba(0, 0, 0, 0.9);
+    --videoPlayButton: rgba(0, 0, 0, 0.6);
+    --videoPlayButtonHover: rgba(0, 0, 0, 0.8);
+    --videoSeekbar: var(--primary);
+    --videoSeekbarBackground: rgba(255, 255, 255, 0.3);
+    --videoSeekbarLoaded: rgba(255, 255, 255, 0.4);
+    --videoTooltip: rgba(0, 0, 0, 0.8);
+    --videoVolumePanel: #ffffff;
+
+    /* Video Player Theme */
+    --video-progress: var(--primary);
+    --video-progress-loaded: rgba(255, 255, 255, 0.3);
+    --video-control-bg: linear-gradient(0deg, rgba(0, 0, 0, 0.95), transparent);
+    --video-control-color: #fff;
+    --video-control-hover: var(--primary);
+    --video-time-color: rgba(255, 255, 255, 0.9);
+  }
+
+  .dark {
+    --background: #1a1a1a;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-background: #181818;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: rgb(5, 150, 105);
+    --primary-dark: #182622;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    --separator-border-color: #4a4a4a;
+
+
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-color: var(--custom-background);
+    color: var(--custom-foreground);
+  }
+
+  .custom-button {
+    background-color: var(--custom-primary);
+    color: var(--custom-foreground);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .custom-input {
+    background-color: var(--custom-secondary);
+    color: var(--custom-foreground);
+    border: 1px solid var(--custom-primary);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  textarea::-webkit-scrollbar {
+    width: 8px;
+    height: 0; /* Remove bottom scrollbar */
+  }
+
+  textarea::-webkit-scrollbar-thumb {
+    background-color: var(--scroll-transparent-black);
+    border-radius: 4px;
+  }
+}
+
+@keyframes expandPopup {
+  from {
+    width: 120px;
+    border-radius: 20px;
+  }
+  to {
+    width: 300px;
+    border-radius: 32px;
+  }
+}
+
+@keyframes collapsePopup {
+  from {
+    width: 300px;
+    border-radius: 32px;
+  }
+  to {
+    width: 120px;
+    border-radius: 20px;
+  }
+}
+
+.dynamic-island-popup {
+  backdrop-filter: var(--popup-blur);
+  -webkit-backdrop-filter: var(--popup-blur);
+}
+
+.poppins-thin {
+  font-family: "Poppins", sans-serif;
+  font-weight: 100;
+  font-style: normal;
+}
+
+.poppins-light {
+  font-family: "Poppins", sans-serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.poppins-regular {
+  font-family: "Poppins", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.poppins-bold {
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
