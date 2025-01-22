@@ -70,8 +70,8 @@ root.render(
     <React.StrictMode>
       <RecoilRoot>
         <Auth0Provider
-          domain="echo.uk.auth0.com"
-          clientId="hW1JR5bHRlN7Ah2qGBe8xBBbsXieUlbv"
+          domain={process.env.REACT_APP_AUTH0_ISSUER}
+          clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
           authorizationParams={{
             redirect_uri: process.env.REACT_APP_HOST,
           }}
