@@ -21,7 +21,7 @@ const ContentAlertStudio = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <Link to={`/studio/${broadcastName}/live`} className="flex items-center gap-3 w-full sm:w-auto">
             <Button 
               className="flex-1 sm:flex-initial bg-[var(--card-background)] hover:bg-primary/5 transition-colors
                 border border-white/10 hover:border-primary/30 gap-2"
@@ -38,7 +38,7 @@ const ContentAlertStudio = () => {
                 <span>Upload</span>
               </Button>
             </Link>
-          </div>
+          </Link>
         </div>
       </div>
     </div>

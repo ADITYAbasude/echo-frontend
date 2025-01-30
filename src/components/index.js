@@ -42,4 +42,7 @@ export { default as UploaderUser } from "./common/UploaderUser";
 
 //* studio components
 export { default as StudioTopNavigation } from "./studio/StudioTopNavigation.studio.";
-export  {default as BroadcastCollabRequest} from "./studio/BroadcastCollabRequest.studio";
+export { default as BroadcastCollabRequest } from "./studio/BroadcastCollabRequest.studio";
+export { default as LiveChat } from "./studio/LiveChat";
+export { default as StreamSettings } from "./studio/StreamSettings";
+export { default as LiveStreamPlayer } from "./studio/LiveStreamPlayer";

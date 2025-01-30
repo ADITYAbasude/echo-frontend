@@ -11,6 +11,7 @@ import VideoPage from "./pages/common/VideoPage";
 import { HelmetProvider } from 'react-helmet-async';
 import Settings from './pages/common/SettingsPage';
 import Collection from "./pages/common/CollectionPage";
+import GoLivePage from "./pages/studio/GoLivePage";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
                 <Route path="complete-account" element={<CompleteAccount />} />
                 <Route path=":broadcastName" element={<StudioPage />} />
                 <Route path=":broadcastName/create" element={<UploadVideo />} />
+                <Route path=":broadcastName/live" element={<GoLivePage />} />
                 <Route path="verify" element={<Verify />} />
               </Route>
               <Route path="/settings" element={<Settings />} />

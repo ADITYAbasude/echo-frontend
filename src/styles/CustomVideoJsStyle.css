@@ -1,3 +1,6 @@
+/* Import shared styles */
+@import './sharedVideoPlayer.css';
+
 .video-container {
   position: relative;
   width: 100%;
@@ -35,6 +38,7 @@
 .video-js.vjs-default-skin {
   height: 100%;
   box-sizing: border-box; /* Ensure the height includes padding and border */
+  font-family: inherit;
 }
 
 .video-js .vjs-tech {
@@ -52,7 +56,7 @@
   align-items: center;
   height: 40px;
   padding: 0 12px;
-  background: rgba(0, 0, 0, 0);
+  background: var(--videoControlBar);
 }
 
 /* Left side controls */
@@ -233,6 +237,7 @@
   z-index: 2;
   transition: all 0.3s ease;
   opacity: 1; */
+  background: var(--videoPlayButton);
 }
 
 .video-js:not(.vjs-paused) .vjs-big-play-button {
@@ -651,4 +656,40 @@ button.vjs-picture-in-picture-control.vjs-control.vjs-button,
   font-size: 1.1em;
   line-height: 3em;
   margin-right: 0.5em;
+}
+
+.live-stream-player .video-js {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  top: 0;
+  left: 0;
+}
+
+.live-stream-player .video-js.vjs-fluid,
+.live-stream-player .video-js.vjs-16-9,
+.live-stream-player .video-js.vjs-4-3 {
+  padding-top: 0 !important;
+  height: 100% !important;
+}
+
+.live-stream-player .video-js .vjs-tech {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.live-stream-player .vjs-poster {
+  background-size: cover;
+}
+
+.live-stream-player .vjs-control-bar {
+  background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
+}
+
+.live-stream-player .vjs-control-bar .vjs-button {
+  color: white;
 }
