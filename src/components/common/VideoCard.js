@@ -5,7 +5,7 @@ import {
   formatVideoDuration,
   formatViews,
 } from "../../utils/videoUtils";
-import { PlayIcon, Clock, Trash2, X, Film } from "lucide-react";
+import { PlayIcon, Clock, Trash2, X, Film, Radio } from "lucide-react";
 import { Avatar, AvatarFallback, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "../";
 
 const VideoCard = ({ 
@@ -14,7 +14,7 @@ const VideoCard = ({
   onWatchLater, 
   isInWatchLater, 
   showRemove = true,
-  isCollectionCard = false 
+  isCollectionCard = false
 }) => {
   const navigate = useNavigate();
 
@@ -35,6 +35,17 @@ const VideoCard = ({
             <Film className="w-12 h-12 text-primary/20" />
           </div>
         )}
+        
+        {/* Live Status Badge */}
+        {video.isLive && (
+          <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 px-1.5 py-0.5 sm:px-2 sm:py-1 
+            bg-primary text-white text-[10px] sm:text-xs font-semibold rounded-full 
+            flex items-center gap-1.5">
+            <Radio className="w-3 h-3 text-white animate-pulse" />
+            LIVE
+          </div>
+        )}
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
           <PlayIcon className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 text-white/90" />
         </div>

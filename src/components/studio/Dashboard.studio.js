@@ -14,14 +14,17 @@ import {
   BarChart2, 
   Users, 
   Clock, 
-  Activity 
+  Activity,
+  Film
 } from "lucide-react";
 import StudioContextMenu from "../menu/Studio.context.menu";
 import { gql, useQuery, useMutation } from "@apollo/client";
 import { useParams, useNavigate } from "react-router";
 import Cookies from 'js-cookie';
 import useAuthToken from "../../hooks/useAuthToken";
-
+import { useRecoilState } from "recoil";
+import { setVisible } from "../../state/toastState";
+  
 const LEAVE_BROADCAST = gql`
   mutation LeaveBroadcast($broadcastName: String!) {
     leaveBroadcast(broadcastName: $broadcastName) {
@@ -31,10 +34,27 @@ const LEAVE_BROADCAST = gql`
   }
 `;
 
+const GET_LIVE_STREAM_STATUS = gql`
+  query GetLiveStreamStatus {
+    getLiveStreamStatus {
+      success
+      message
+      isLive
+      streamTitle
+      viewerCount
+      startedAt
+      posterUrl 
+      streamKey
+    }
+  }
+`;
+
 const DashboardStudio = () => {
   const navigate = useNavigate();
-  const token = useAuthToken()
+  const token = useAuthToken();
   const { broadcastName } = useParams();
+
+  const [, setToastVisibility] = useRecoilState(setVisible);
 
   const { data: membersData } = useQuery(
     gql`
@@ -62,6 +82,18 @@ const DashboardStudio = () => {
     }
   );
 
+  // Add live stream status query
+  const { data: streamStatus } = useQuery(GET_LIVE_STREAM_STATUS, {   
+    context: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        token: `Bearer ${Cookies.get("broadcastToken")}`,
+      }
+    },
+    pollInterval: 5000, // Poll every 5 seconds
+    skip: !broadcastName || !token,
+  });
+
   const [leaveBroadcast] = useMutation(LEAVE_BROADCAST);
 
   const handleLeaveBroadcast = async () => {
@@ -88,6 +120,7 @@ const DashboardStudio = () => {
     }
   };
 
+  // For now static data
   const stats = [
     { label: 'Total Views', value: '2.3K', icon: BarChart2, change: '+12%' },
     { label: 'Active Members', value: '28', icon: Users, change: '+3%' },
@@ -97,6 +130,78 @@ const DashboardStudio = () => {
 
   return (
     <div className="p-2 sm:p-4 md:p-6">
+      {/* Live Stream Status */}
+      <div className="mb-6">
+        <div className="bg-[var(--card-background)] rounded-lg border border-white/5">
+          <div className="h-0.5 w-full bg-gradient-to-r from-primary/80 to-primary/20" />
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base sm:text-lg font-medium text-white/90">Live Stream</h2>
+              {streamStatus?.getLiveStreamStatus?.isLive ? (
+                <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-sm">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  Live Now
+                </span>
+              ) : (
+                <span className="text-sm text-white/50">Offline</span>
+              )}
+            </div>
+
+            {streamStatus?.getLiveStreamStatus?.isLive ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="aspect-video rounded-lg overflow-hidden bg-black/40">
+                    {streamStatus.getLiveStreamStatus.posterUrl && (
+                      <img 
+                        src={streamStatus.getLiveStreamStatus.posterUrl} 
+                        alt="Stream Preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-white/90 font-medium mb-1">
+                        {streamStatus.getLiveStreamStatus.streamTitle}
+                      </h3>
+                      <p className="text-sm text-white/50">
+                        Started {new Date(streamStatus.getLiveStreamStatus.startedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm">
+                        {streamStatus.getLiveStreamStatus.viewerCount} viewers
+                      </div>
+                      <Button
+                        onClick={() => navigate(`/studio/${broadcastName}/live`)}
+                        variant="outline"
+                        size="sm"
+                        className="border-primary/20 hover:bg-primary/10 text-primary"
+                      >
+                        Manage Stream
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="mb-4">
+                  <Film className="w-12 h-12 text-primary/20 mx-auto" />
+                </div>
+                <p className="text-white/60 mb-4">No active live stream</p>
+                <Button
+                  onClick={() => navigate(`/studio/${broadcastName}/live`)}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  Start Streaming
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((stat, index) => (

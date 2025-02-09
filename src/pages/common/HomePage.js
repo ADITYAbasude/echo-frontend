@@ -15,6 +15,7 @@ const GET_HOME_CONTENT = gql`
         _id
         videoKey
         createdAt
+        isLive
         metaData {
           title
           posterUrl
@@ -45,6 +46,7 @@ const GET_HOME_CONTENT = gql`
         _id
         videoKey
         createdAt
+        isLive
         metaData {
           title
           posterUrl

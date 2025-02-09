@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { EffectCoverflow, Navigation, Autoplay } from "swiper/modules";
-import { PlayCircleIcon, ClockIcon, EyeIcon } from "lucide-react";
+import { PlayCircleIcon, ClockIcon, EyeIcon, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "swiper/css";
 import "swiper/css/effect-coverflow";
@@ -62,13 +62,25 @@ const SwiperCarousel = ({ slides }) => {
                 className="slide-image"
               />
               
-              {/* Duration Badge */}
-              <div className="absolute top-2 sm:top-3 right-2 sm:right-3 px-2 py-1 sm:px-2.5 sm:py-1.5 
-                bg-[var(--card-background)]/90 backdrop-blur-sm border border-white/10 rounded-md 
-                flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-white/90">
-                <ClockIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>{formatVideoDuration(slide?.metaData?.duration)}</span>
-              </div>
+              {/* Live Status Badge */}
+              {slides?.isLive && (
+                <div className="absolute top-3 sm:top-4 left-3 sm:left-4 px-2.5 py-1.5 sm:px-3 sm:py-2 
+                  bg-primary text-white text-xs sm:text-sm font-semibold rounded-full 
+                  flex items-center gap-2 z-20">
+                  <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white animate-pulse" />
+                  LIVE
+                </div>
+              )}
+
+              {/* Duration Badge - Only show if not live */}
+              {!slides.isLive && (
+                <div className="absolute top-2 sm:top-3 right-2 sm:right-3 px-2 py-1 sm:px-2.5 sm:py-1.5 
+                  bg-[var(--card-background)]/90 backdrop-blur-sm border border-white/10 rounded-md 
+                  flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-white/90">
+                  <ClockIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>{formatVideoDuration(slide?.metaData?.duration)}</span>
+                </div>
+              )}
 
               {/* View Count Badge */}
               <div className="absolute top-2 sm:top-3 left-2 sm:left-3 px-2 py-1 sm:px-2.5 sm:py-1.5 

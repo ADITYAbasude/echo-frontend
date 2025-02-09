@@ -4,7 +4,7 @@ import VideoPlayer from "../../components/common/VideoPlayer";
 import { Share } from "lucide-react";
 import { useParams } from "react-router";
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { CircularLoader, UploaderUser, Button } from "../../components";
+import { CircularLoader, UploaderUser, Button, LiveStreamPlayer } from "../../components";
 import { useVideoPlayer } from "../../hooks/useVideoPlayer";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage } from "../../components";
@@ -15,6 +15,7 @@ const GET_VIDEO_BY_ID = gql`
     getVideoByID(videoID: $videoID) {
       _id
       videoKey
+      isLive
       metaData {
         title
         posterUrl
@@ -277,12 +278,22 @@ const VideoPage = () => {
                       <CircularLoader className="w-8 h-8 text-primary" />
                     </div>
                   ) : (
-                    <VideoPlayer
-                      key={contentID}
-                      options={videoJsOptions}
-                      onReady={handlePlayerReady}
-                      settings={videoData?.getVideoByID?.userSettings}
-                    />
+                      videoData?.getVideoByID?.isLive ? (
+                        <LiveStreamPlayer
+                        stream={{
+                          url: `http://localhost:8000/hls/${videoData?.getVideoByID?.videoKey}.m3u8`,
+                          broadcasterName: videoData?.getVideoByID?.videoAddBy?.username || "Unknown",
+                          isLive: videoData?.getVideoByID?.isLive,
+                        }}
+                        />
+                      ) : (
+                        <VideoPlayer
+                          key={contentID}
+                          options={videoJsOptions}
+                          onReady={handlePlayerReady}
+                          settings={videoData?.getVideoByID?.userSettings}
+                        />
+                      )
                   )}
                 </div>
               </div>

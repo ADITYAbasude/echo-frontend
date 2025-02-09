@@ -1,352 +1,456 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { gql, useQuery, useMutation, useSubscription } from "@apollo/client";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import {
-  Rocket,
-  Eye,
-  Clock,
-  Copy,
-  Check,
-  AlertCircle,
-  Radio,
-  Settings,
-  Users,
-  MessageCircle,
-  Share2,
-  Settings2,
-  Shield,
-  UserPlus,
-  Mic,
-  MicOff,
-  Video,
-  VideoOff,
-  XIcon,
-  Layout
-} from "lucide-react";
-import { Button, CircularLoader, LiveChat, StreamSettings, LiveStreamPlayer } from "../../components";
+import { LiveStreamPlayer, CircularLoader } from "../../components";
+import { Upload, Copy, Check, AlertCircle } from "lucide-react";
 import useAuthToken from "../../hooks/useAuthToken";
 import Cookies from "js-cookie";
 import { useRecoilState } from "recoil";
 import { setVisible } from "../../state/toastState";
-import { useVideoPlayer } from "../../hooks/useVideoPlayer";
+import { gql, useQuery } from "@apollo/client";
 
+const GET_LIVE_STREAM_STATUS = gql`
+  query GetLiveStreamStatus {
+    getLiveStreamStatus {
+      isLive
+      streamTitle
+      viewerCount
+      startedAt
+      posterUrl
+      streamKey
+    }
+  }
+`;
 
 const GoLivePage = () => {
-  const token = useAuthToken();
   const { broadcastName } = useParams();
-  const [, setToastVisibility] = useRecoilState(setVisible);
+  const [poster, setPoster] = useState(null);
   const [copied, setCopied] = useState(false);
-  const [streamKey, setStreamKey] = useState('123456');
-  const [streamHealth, setStreamHealth] = useState("offline"); // offline, good, poor
-  const [streamStats, setStreamStats] = useState({
-    viewerCount: 0,
-    duration: 0,
-    isLive: false,
+  const [isStreamInitialized, setIsStreamInitialized] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState("");
+  const [streamDetails, setStreamDetails] = useState({
+    title: "",
+    description: "",
   });
-  const [chatOpen, setChatOpen] = useState(true);
-  const [micEnabled, setMicEnabled] = useState(true);
-  const [cameraEnabled, setCameraEnabled] = useState(true);
-  const [moderationEnabled, setModerationEnabled] = useState(true);
-  const [streamSettings, setStreamSettings] = useState({
-    quality: "1080p60",
-    mode: "ultra-low-latency"
-  });
-  const [showSettings, setShowSettings] = useState(false);
-  const [streamQuality, setStreamQuality] = useState("auto");
-  const [analyticsData, setAnalyticsData] = useState({
-    avgBitrate: 0,
-    droppedFrames: 0,
-    fps: 0,
-    bandwidth: 0
-  });
-  const playerRef = useRef(null);
-  const [showControls, setShowControls] = useState(false);
+  const [streamKey, setStreamKey] = useState("");
+  const [, setToastVisibility] = useRecoilState(setVisible);
+  const token = useAuthToken();
 
-    const { updatePlayerState } = useVideoPlayer();
-
-   const handlePlayerReady = useCallback(
-      (player) => {
-        if (!player) return;
-  
-        // playerRef.current = player;
-        updatePlayerState(player);
+  // Check for existing stream
+  const { data: streamStatus, loading: loadingStreamStatus } = useQuery(
+    GET_LIVE_STREAM_STATUS,
+    {
+      context: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          token: `Bearer ${Cookies.get("broadcastToken")}`,
+        },
       },
-      [updatePlayerState]
-    );
+      fetchPolicy: "network-only",
+      skip: !broadcastName || !token,
+      pollInterval: 5000, // Poll every 5 seconds to check stream status
+    }
+  );
+
+  useEffect(() => {
+    if (streamStatus?.getLiveStreamStatus?.isLive) {
+      setStreamKey(streamStatus.getLiveStreamStatus.streamKey);
+      setIsStreamInitialized(true);
+      setStreamDetails({
+        title: streamStatus.getLiveStreamStatus.streamTitle,
+        description: streamStatus.getLiveStreamStatus.description || "",
+      });
+      if (streamStatus.getLiveStreamStatus.previewUrl) {
+        setPoster(streamStatus.getLiveStreamStatus.previewUrl);
+      }
+    }
+  }, [streamStatus, setToastVisibility]);
+
+  const handlePosterUpload = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith("image/")) {
+      setPoster(file);
+    } else {
+      setToastVisibility({
+        message: "Please upload a valid image file",
+        visible: true,
+        type: "error",
+      });
+    }
+  };
 
   const copyToClipboard = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setToastVisibility({
-        message: "Stream key copied to clipboard",
-        type: "success",
-        visible: true,
-      });
       setTimeout(() => setCopied(false), 2000);
+      setToastVisibility({
+        message: "Copied to clipboard",
+        visible: true,
+        type: "success",
+      });
     } catch (err) {
       setToastVisibility({
-        message: "Failed to copy stream key",
-        type: "error",
+        message: "Failed to copy to clipboard",
         visible: true,
+        type: "error",
       });
     }
   };
 
-  const getHealthColor = () => {
-    switch (streamHealth) {
-      case "good":
-        return "text-green-500";
-      case "poor":
-        return "text-yellow-500";
-      default:
-        return "text-red-500";
-    }
-  };
-
-  const formatDuration = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours}h ${minutes}m ${secs}s`;
-  };
-
-  const handleStreamEnd = async () => {
-    try {
-      // const { data } = await endStream({
-      //   context: {
-      //     headers: {
-      //       Authorization: `Bearer ${token}`,
-      //       token: `Bearer ${Cookies.get("broadcastToken")}`,
-      //     },
-      //   },
-      // });
-
-      // if (data?.endStream?.success) {
-      //   setToastVisibility({
-      //     message: "Stream ended successfully",
-      //     type: "success",
-      //     visible: true,
-      //   });
-      // }
-    } catch (error) {
+  const handleStreamStart = async () => {
+    if (!streamDetails.title.trim()) {
+      setError("Stream title is required");
       setToastVisibility({
-        message: "Failed to end stream",
-        type: "error",
+        message: "Stream title is required",
         visible: true,
+        type: "error",
       });
+      return;
     }
-  };
 
-  const handleSettingsUpdate = async (settings) => {
+    if (!poster) {
+      setError("Stream poster is required");
+      setToastVisibility({
+        message: "Stream poster is required",
+        visible: true,
+        type: "error",
+      });
+      return;
+    }
+
     try {
-      setStreamSettings(settings);
-      // await updateSettings({
-      //   variables: { input: settings },
-      //   context: {
-      //     headers: {
-      //       Authorization: `Bearer ${token}`,
-      //       token: `Bearer ${Cookies.get("broadcastToken")}`,
-      //     },
-      //   },
-      // });
-    } catch (error) {
-      console.error('Failed to update settings:', error);
+      setError("");
+      setIsProcessing(true);
+
+      const operations = {
+        query: `mutation StreamBroadcast($input: StreamBroadcastInput!) {
+          streamBroadcast(input: $input) {
+            message
+            success
+            streamKey
+          }
+        }`,
+        variables: {
+          input: {
+            title: streamDetails.title,
+            description: streamDetails.description || "",
+            poster: null,
+          },
+        },
+      };
+
+      const formData = new FormData();
+      formData.append("operations", JSON.stringify(operations));
+      formData.append("map", JSON.stringify({ 0: ["variables.input.poster"] }));
+      formData.append("0", poster);
+
+      const result = await fetch(`${process.env.REACT_APP_API_HOST}/graphql`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          token: `Bearer ${Cookies.get("broadcastToken")}`,
+          "apollo-require-preflight": "true",
+          "x-apollo-operation-name": "StreamBroadcast",
+        },
+        body: formData,
+      });
+
+      if (!result.ok) {
+        throw new Error(`HTTP error! status: ${result.status}`);
+      }
+
+      const response = await result.json();
+
+      if (response.errors) {
+        throw new Error(response.errors[0].message);
+      }
+
+      if (response.data?.streamBroadcast?.success) {
+        setStreamKey(response.data.streamBroadcast.streamKey);
+        setIsStreamInitialized(true);
+        setToastVisibility({
+          message: "Stream initialized successfully",
+          visible: true,
+          type: "success",
+        });
+      } else {
+        throw new Error(
+          response.data?.streamBroadcast?.message ||
+            "Failed to initialize stream"
+        );
+      }
+    } catch (err) {
+      setError(err.message);
+      setToastVisibility({
+        message: err.message,
+        visible: true,
+        type: "error",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleModeratorAdd = async (userId) => {
-    // Implementation for adding moderator
-  };
+  // Stream URLs
+  const rtmpServerUrl = `rtmp://${
+    process.env.REACT_APP_RTMP_SERVER || "localhost:1935"
+  }/live`;
 
-  const handleUserBan = async (userId) => {
-    // Implementation for banning user
-  };
+  const playbackUrl = `http://${
+    process.env.REACT_APP_HLS_SERVER || "localhost:8000"
+  }/hls/${streamKey}.m3u8`;
 
-  const qualityOptions = {
-    "1080p60": { label: "1080p 60fps", bitrate: "6000kbps" },
-    "720p60": { label: "720p 60fps", bitrate: "4500kbps" },
-    "720p": { label: "720p 30fps", bitrate: "2500kbps" },
-    "480p": { label: "480p 30fps", bitrate: "1500kbps" }
-  };
+  const posterPreviewUrl =
+    poster instanceof File ? URL.createObjectURL(poster) : poster;
 
-  const getStreamUrl = (streamKey, quality) => {
-    // Remove quality suffix for main stream
-    const baseUrl = `http://localhost:8000/hls/${streamKey}`;
-    if (!quality) return `${baseUrl}.m3u8`;
-    
-    // Add quality suffix for transcoded streams
-    return `${baseUrl}_${quality}.m3u8`;
-  };
-
-  const videoPlayerOptions = {
-    sources: [{
-      src: getStreamUrl(streamKey, streamSettings.quality),
-      type: 'application/x-mpegURL'
-    }],
-    autoplay: true,
-    controls: true,
-    responsive: true,
-    fluid: true,
-    controlBar: {
-      children: [
-        'playToggle',
-        'volumePanel',
-        'currentTimeDisplay',
-        'timeDivider',
-        'durationDisplay',
-        'progressControl',
-        'liveDisplay',
-        'customControlSpacer',
-        'playbackRateMenuButton',
-        'fullscreenToggle',
-        {
-          name: 'ResolutionMenuButton',
-          template: `
-            <button class="vjs-resolution-button vjs-menu-button vjs-menu-button-popup vjs-control vjs-button">
-              <span class="vjs-resolution-value"></span>
-            </button>
-          `
-        }
-      ],
-      volumePanel: {
-        inline: false
-      }
-    },
-    liveui: true,
-    liveTracker: true,
-    plugins: {
-      streamQuality: {
-        defaultQuality: streamQuality,
-        onQualityChange: (quality) => setStreamQuality(quality)
-      },
-      analytics: {
-        onStatsUpdate: (stats) => setAnalyticsData(stats)
-      }
-    }
-  };
-
-  // Add cleanup effect
-  useEffect(() => {
-    return () => {
-      // Cleanup player on page unmount
-      if (playerRef.current) {
-        playerRef.current.dispose();
-      }
-    };
-  }, []);
-
-  // if (loadingStreamKey) {
-  //   return (
-  //     <div className="flex items-center justify-center h-[50vh]">
-  //       <CircularLoader />
-  //     </div>
-  //   );
-  // }
+  // Early return if loading stream status
+  if (loadingStreamStatus) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <CircularLoader className="w-8 h-8 text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-2 sm:p-4 md:p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-3 space-y-4">
-          {/* Stream Preview */}
-          <div className="bg-[var(--card-background)] rounded-lg border border-white/5 
-            overflow-hidden shadow-lg">
-            <div className="h-0.5 w-full bg-gradient-to-r from-primary/80 to-primary/20"></div>
-            
-            <div className="relative w-full min-h-[400px] lg:min-h-[600px] bg-black">
-              <LiveStreamPlayer
-                key={streamKey}  // Force re-render when stream key changes
-                ref={playerRef}
-                streams={[
-                  { 
-                    id: 'main', 
-                    broadcasterName: broadcastName,
-                    url: getStreamUrl(streamKey) // Use base stream URL
-                  }
-                ]}
-                isMainBroadcaster={true}
-                onReady={(player) => {
-                  console.log('Player ready');
-                  handlePlayerReady(player);
-                }}
-                onError={(error) => console.error('Stream error:', error)}
-                showControls={true}
-              />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+        {/* Stream Preview */}
+        <div className="lg:col-span-8 xl:col-span-9 space-y-4">
+          {isStreamInitialized ? (
+            <LiveStreamPlayer
+              stream={{
+                url: playbackUrl,
+                broadcasterName: broadcastName,
+                isLive: true,
+              }}
+              poster={posterPreviewUrl}
+            />
+          ) : (
+            <div className="aspect-video bg-black/40 rounded-lg flex items-center justify-center">
+              <p className="text-white/60">
+                Set up your stream details to begin
+              </p>
+            </div>
+          )}
 
-              {/* Stream Status Overlay */}
-              <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-xs font-medium bg-black/60 text-white/90">
-                {streamStats.isLive ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    LIVE
-                  </span>
-                ) : 'OFFLINE'}
-              </div>
+          {/* Stream Settings */}
+          <div className="bg-[var(--card-background)] rounded-lg border border-white/5">
+            <div className="h-0.5 w-full bg-gradient-to-r from-primary/80 to-primary/20" />
+            <div className="p-4 space-y-4">
+              {/* Show stream details if stream is active */}
+              {isStreamInitialized ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium text-white/90 mb-2">
+                      Stream Information
+                    </h3>
+                    <div className="grid gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-white/80 mb-2 block">
+                          RTMP Server URL
+                        </label>
+                        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+                          <input
+                            type="text"
+                            readOnly
+                            value={rtmpServerUrl}
+                            className="w-full sm:flex-1 bg-black/20 border border-white/10 rounded-sm px-3 py-2 text-white/90"
+                          />
+                          <button
+                            onClick={() => copyToClipboard(rtmpServerUrl)}
+                            className="w-full sm:w-auto px-3 py-2 bg-primary/10 text-primary rounded-sm hover:bg-primary/20 flex items-center justify-center"
+                          >
+                            {copied ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
 
-              {/* Viewer Count */}
-              {streamStats.isLive && (
-                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-medium bg-black/60 text-white/90">
-                  {streamStats.viewerCount} viewers
+                      <div>
+                        <label className="text-sm font-medium text-white/80 mb-2 block">
+                          Stream Key
+                        </label>
+                        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+                          <input
+                            type="password"
+                            readOnly
+                            value={streamKey}
+                            className="w-full sm:flex-1 bg-black/20 border border-white/10 rounded-sm px-3 py-2 text-white/90"
+                          />
+                          <button
+                            onClick={() => copyToClipboard(streamKey)}
+                            className="w-full sm:w-auto px-3 py-2 bg-primary/10 text-primary rounded-sm hover:bg-primary/20 flex items-center justify-center"
+                          >
+                            {copied ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {streamStatus?.getLiveStreamStatus?.isLive && (
+                        <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                          <p className="text-green-500 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            Stream is live - Use OBS or your streaming software
+                            to end the stream
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-white/80 mb-2 block">
+                      Stream Title
+                    </label>
+                    <input
+                      type="text"
+                      value={streamDetails.title}
+                      onChange={(e) =>
+                        setStreamDetails((prev) => ({
+                          ...prev,
+                          title: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-black/20 border border-white/10 rounded-sm px-3 py-2 text-white/90"
+                      placeholder="Enter stream title"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-white/80 mb-2 block">
+                      Description
+                    </label>
+                    <textarea
+                      value={streamDetails.description}
+                      onChange={(e) =>
+                        setStreamDetails((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                      className="w-full bg-black/20 border border-white/10 rounded-sm px-3 py-2 text-white/90"
+                      rows="3"
+                      placeholder="Describe your stream"
+                    />
+                  </div>
                 </div>
               )}
             </div>
           </div>
+        </div>
 
-          {/* Stream Setup Card */}
-          <div className="bg-[var(--card-background)] rounded-lg border border-white/5">
-            <div className="h-0.5 w-full bg-gradient-to-r from-primary/80 to-primary/20"></div>
+        {/* Sidebar */}
+        <div className="lg:col-span-4 xl:col-span-3">
+          <div className="bg-[var(--card-background)] rounded-lg border border-white/5 h-full">
+            <div className="h-0.5 w-full bg-gradient-to-r from-primary/80 to-primary/20" />
             <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-white/80">Stream URL</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value="rtmp://localhost:1935/live"
-                      readOnly
-                      className="flex-1 bg-black/20 border border-white/10 rounded-sm px-3 py-2 text-white/90 text-sm"
-                    />
-                    <Button onClick={() => copyToClipboard("rtmp://localhost:1935/live")}>
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-white/60">
-                    Recommended bitrate: {qualityOptions[streamSettings.quality]?.bitrate}
-                  </p>
-                </div>
+              <div className="space-y-4">
+                {/* Only show poster upload when stream is not initialized */}
+                {!isStreamInitialized && (
+                  <>
+                    <h3 className="text-lg font-medium text-white/90">
+                      Upload Poster
+                    </h3>
+
+                    {/* Thumbnail Upload */}
+                    <div className="border-2 border-dashed border-white/10 rounded-lg p-4 text-center">
+                      {poster ? (
+                        <div className="relative">
+                          <img
+                            src={posterPreviewUrl}
+                            alt="Stream poster"
+                            className="w-full rounded-lg"
+                          />
+                          <button
+                            onClick={() => setPoster(null)}
+                            className="absolute top-2 right-2 p-1 bg-black/60 rounded-full text-white/80 hover:text-white"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="cursor-pointer block">
+                          <Upload className="w-8 h-8 text-white/40 mx-auto mb-2" />
+                          <span className="text-sm text-white/60">
+                            Upload poster
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePosterUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-white/80">Stream Key</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="password"
-                      value="123456"
-                      readOnly
-                      className="flex-1 bg-black/20 border border-white/10 rounded-sm px-3 py-2 text-white/90 text-sm"
-                    />
-                    <Button onClick={() => copyToClipboard("123456")}>
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </Button>
-                  </div>
+                  <button
+                    onClick={handleStreamStart}
+                    disabled={isStreamInitialized || isProcessing}
+                    className={`w-full py-2.5 rounded-lg transition-all relative
+                      ${
+                        isStreamInitialized
+                          ? "bg-green-500/20 text-green-500 hover:bg-green-500/30"
+                          : isProcessing
+                          ? "bg-primary/5 text-primary/50 cursor-not-allowed"
+                          : "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+                      } flex items-center justify-center gap-2`}
+                  >
+                    {isProcessing && (
+                      <CircularLoader className="w-4 h-4 text-current" />
+                    )}
+                    {isStreamInitialized ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        Stream Ready
+                      </>
+                    ) : (
+                      <span className="font-medium">
+                        {isProcessing ? "Initializing Stream..." : "Start Stream"}
+                      </span>
+                    )}
+                  </button>
+
+                  {error && (
+                    <div className="flex items-center gap-1.5 text-red-400 text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{error}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Chat Section */}
-        <div className="lg:col-span-1">
-          <LiveChat
-            subscription={null}
-            sendMessage={null}
-            broadcasterId={broadcastName}
-            isMainBroadcaster={true}
-            onModeratorAdd={handleModeratorAdd}
-            onUserBan={handleUserBan}
-          />
-        </div>
       </div>
+
+      {/* Loading Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[var(--card-background)] p-6 rounded-lg shadow-sm border border-white/5">
+            <div className="flex flex-col items-center">
+              <CircularLoader className="w-8 h-8 text-primary" />
+              <p className="mt-3 text-center text-sm text-white/80">
+                Initializing stream...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

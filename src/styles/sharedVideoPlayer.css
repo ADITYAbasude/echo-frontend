@@ -20,12 +20,30 @@
   composes: video-js from './CustomVideoJsStyle.css';
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+}
+
+.video-stream-player .vjs-tech {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
 }
 
 .video-stream-player .vjs-control-bar {
   background: var(--videoControlBar);
   height: 48px;
   padding: 0 16px;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.video-stream-player .vjs-control {
+  pointer-events: auto;
 }
 
 .video-stream-player .vjs-big-play-button {
@@ -36,6 +54,7 @@
   height: 68px;
   line-height: 68px;
   transition: all 0.3s ease;
+  z-index: 2;
 }
 
 .video-stream-player .vjs-big-play-button:hover {
@@ -109,4 +128,39 @@
   background: var(--primary);
   height: 100%;
   transition: width 0.2s;
+}
+
+.live-stream-player {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  background: #000;
+}
+
+.live-stream-player .video-js {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.live-stream-player .vjs-control-bar {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+  pointer-events: auto !important;
+}
+
+.live-stream-player .vjs-control {
+  pointer-events: auto !important;
+}
+
+.live-stream-player [data-vjs-player] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }

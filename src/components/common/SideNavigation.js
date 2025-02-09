@@ -157,7 +157,7 @@ const SideNavigation = () => {
                     onClick={() => {
                       logout({ returnTo: window.location.origin }).then(() => {
                         Cookies.remove("broadcastToken");
-                      });
+                      });                      
                     }}
                     className="flex items-center cursor-pointer text-[--danger] even:mt-1 w-full max-lg:justify-center max-lg:mt-2"
                   >
