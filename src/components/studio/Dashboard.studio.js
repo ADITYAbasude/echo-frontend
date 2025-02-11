@@ -15,15 +15,15 @@ import {
   Users, 
   Clock, 
   Activity,
-  Film
+  Film,
+  Monitor,
+  Smartphone
 } from "lucide-react";
 import StudioContextMenu from "../menu/Studio.context.menu";
 import { gql, useQuery, useMutation } from "@apollo/client";
 import { useParams, useNavigate } from "react-router";
 import Cookies from 'js-cookie';
 import useAuthToken from "../../hooks/useAuthToken";
-import { useRecoilState } from "recoil";
-import { setVisible } from "../../state/toastState";
   
 const LEAVE_BROADCAST = gql`
   mutation LeaveBroadcast($broadcastName: String!) {
@@ -49,12 +49,32 @@ const GET_LIVE_STREAM_STATUS = gql`
   }
 `;
 
+const GET_ANALYTICS = gql`
+  query GetBroadcastAnalytics {
+    getAnalyticsOfBroadcast {
+      broadcastEngagement {
+        views
+        date
+      }
+      location {
+        country
+        views
+      }
+      deviceAnalytics {
+        date
+        desktop
+        mobile
+      }
+      message
+      status
+    }
+  }
+`;
+
 const DashboardStudio = () => {
   const navigate = useNavigate();
   const token = useAuthToken();
   const { broadcastName } = useParams();
-
-  const [, setToastVisibility] = useRecoilState(setVisible);
 
   const { data: membersData } = useQuery(
     gql`
@@ -94,6 +114,18 @@ const DashboardStudio = () => {
     skip: !broadcastName || !token,
   });
 
+  // Add analytics query
+  const { data: analyticsData } = useQuery(GET_ANALYTICS, {
+    context: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        token: `Bearer ${Cookies.get("broadcastToken")}`,
+      }
+    },
+    pollInterval: 30000, // Poll every 30 seconds
+    skip: !broadcastName || !token,
+  });
+
   const [leaveBroadcast] = useMutation(LEAVE_BROADCAST);
 
   const handleLeaveBroadcast = async () => {
@@ -120,12 +152,77 @@ const DashboardStudio = () => {
     }
   };
 
-  // For now static data
+  // Calculate total views and growth
+  const calculateViewStats = () => {
+    if (!analyticsData?.getAnalyticsOfBroadcast?.broadcastEngagement) {
+      return { total: 0, growth: '0%' };
+    }
+
+    const engagement = analyticsData.getAnalyticsOfBroadcast.broadcastEngagement;
+    const total = engagement.reduce((sum, item) => sum + item.views, 0);
+    
+    // Calculate growth (comparing last two days)
+    if (engagement.length >= 2) {
+      const yesterday = engagement[engagement.length - 1].views;
+      const dayBefore = engagement[engagement.length - 2].views;
+      const growth = dayBefore > 0 ? ((yesterday - dayBefore) / dayBefore) * 100 : 0;
+      return { total, growth: `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%` };
+    }
+
+    return { total, growth: '+0%' };
+  };
+
+  // Calculate device stats
+  const calculateDeviceStats = () => {
+    if (!analyticsData?.getAnalyticsOfBroadcast?.deviceAnalytics) {
+      return { desktop: 0, mobile: 0, desktopGrowth: '+0%', mobileGrowth: '+0%' };
+    }
+
+    const analytics = analyticsData.getAnalyticsOfBroadcast.deviceAnalytics;
+    const latest = analytics[analytics.length - 1];
+    const previous = analytics[analytics.length - 2];
+
+    const desktopGrowth = previous ? 
+      ((latest.desktop - previous.desktop) / previous.desktop) * 100 : 0;
+    const mobileGrowth = previous ? 
+      ((latest.mobile - previous.mobile) / previous.mobile) * 100 : 0;
+
+    return {
+      desktop: latest.desktop,
+      mobile: latest.mobile,
+      desktopGrowth: `${desktopGrowth >= 0 ? '+' : ''}${desktopGrowth.toFixed(1)}%`,
+      mobileGrowth: `${mobileGrowth >= 0 ? '+' : ''}${mobileGrowth.toFixed(1)}%`
+    };
+  };
+
+  const viewStats = calculateViewStats();
+  const deviceStats = calculateDeviceStats();
+
   const stats = [
-    { label: 'Total Views', value: '2.3K', icon: BarChart2, change: '+12%' },
-    { label: 'Active Members', value: '28', icon: Users, change: '+3%' },
-    { label: 'Watch Time', value: '164h', icon: Clock, change: '+18%' },
-    { label: 'Engagement', value: '86%', icon: Activity, change: '-2%' }
+    { 
+      label: 'Total Views', 
+      value: viewStats.total.toLocaleString(), 
+      icon: BarChart2, 
+      change: viewStats.growth 
+    },
+    { 
+      label: 'Desktop Viewers', 
+      value: deviceStats.desktop.toLocaleString(), 
+      icon: Monitor, 
+      change: deviceStats.desktopGrowth 
+    },
+    { 
+      label: 'Mobile Viewers', 
+      value: deviceStats.mobile.toLocaleString(), 
+      icon: Smartphone, 
+      change: deviceStats.mobileGrowth 
+    },
+    { 
+      label: 'Active Members', 
+      value: membersData?.getBroadcastMembers?.length || 0, 
+      icon: Users, 
+      change: '+0%' 
+    },
   ];
 
   return (
