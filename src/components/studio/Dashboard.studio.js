@@ -174,22 +174,28 @@ const DashboardStudio = () => {
 
   // Calculate device stats
   const calculateDeviceStats = () => {
-    if (!analyticsData?.getAnalyticsOfBroadcast?.deviceAnalytics) {
-      return { desktop: 0, mobile: 0, desktopGrowth: '+0%', mobileGrowth: '+0%' };
+    if (!analyticsData?.getAnalyticsOfBroadcast?.deviceAnalytics || 
+        analyticsData.getAnalyticsOfBroadcast.deviceAnalytics.length === 0) {
+      return { 
+        desktop: 0, 
+        mobile: 0, 
+        desktopGrowth: '+0%', 
+        mobileGrowth: '+0%' 
+      };
     }
 
     const analytics = analyticsData.getAnalyticsOfBroadcast.deviceAnalytics;
-    const latest = analytics[analytics.length - 1];
-    const previous = analytics[analytics.length - 2];
+    const latest = analytics[analytics.length - 1] || { desktop: 0, mobile: 0 };
+    const previous = analytics.length > 1 ? analytics[analytics.length - 2] : null;
 
-    const desktopGrowth = previous ? 
+    const desktopGrowth = previous && previous.desktop ? 
       ((latest.desktop - previous.desktop) / previous.desktop) * 100 : 0;
-    const mobileGrowth = previous ? 
+    const mobileGrowth = previous && previous.mobile ? 
       ((latest.mobile - previous.mobile) / previous.mobile) * 100 : 0;
 
     return {
-      desktop: latest.desktop,
-      mobile: latest.mobile,
+      desktop: latest.desktop || 0,
+      mobile: latest.mobile || 0,
       desktopGrowth: `${desktopGrowth >= 0 ? '+' : ''}${desktopGrowth.toFixed(1)}%`,
       mobileGrowth: `${mobileGrowth >= 0 ? '+' : ''}${mobileGrowth.toFixed(1)}%`
     };

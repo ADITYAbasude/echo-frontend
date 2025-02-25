@@ -40,7 +40,11 @@ const GET_BROADCAST_ANALYTICS = gql`
 const AnalyticsStudio = () => {
   const token = useAuthToken();
 
-  const { data = {} } = useQuery(GET_BROADCAST_ANALYTICS, {
+  const { data = { getAnalyticsOfBroadcast: { 
+    broadcastEngagement: [], 
+    location: [], 
+    deviceAnalytics: [] 
+  } } } = useQuery(GET_BROADCAST_ANALYTICS, {
     context: {
       headers: {
         authorization: `Bearer ${token}`,
@@ -54,11 +58,11 @@ const AnalyticsStudio = () => {
     fetchPolicy: "network-only",
   });
 
-  const chartDataForMultiLine = data?.getAnalyticsOfBroadcast?.deviceAnalytics?.map(item => ({
-    month: new Date(item.date).toLocaleDateString('en-US', { month: 'long' }),
-    desktop: item.desktop,
-    mobile: item.mobile
-  })) || [];
+  const chartDataForMultiLine = (data?.getAnalyticsOfBroadcast?.deviceAnalytics || []).map(item => ({
+    month: new Date(item?.date || Date.now()).toLocaleDateString('en-US', { month: 'long' }),
+    desktop: item?.desktop || 0,
+    mobile: item?.mobile || 0
+  }));
 
   const chartConfig = {
     views: {
@@ -108,7 +112,7 @@ const AnalyticsStudio = () => {
                   >
                     <LineChart
                       accessibilityLayer
-                      data={data.getAnalyticsOfBroadcast?.broadcastEngagement}
+                      data={data?.getAnalyticsOfBroadcast?.broadcastEngagement || []}
                       margin={{
                         left: 12,
                         right: 12,
@@ -281,11 +285,11 @@ const AnalyticsStudio = () => {
                         }
                       />
                       <Pie
-                        data={data?.getAnalyticsOfBroadcast?.location?.map((loc, index) => ({
-                          country: loc.country || 'Unknown',
-                          views: loc.views,
+                        data={(data?.getAnalyticsOfBroadcast?.location || []).map((loc, index) => ({
+                          country: loc?.country || 'Unknown',
+                          views: loc?.views || 0,
                           fill: `hsl(${index * 36}, 70%, 50%)`
-                        })) || []}
+                        }))}
                         dataKey="views"
                         nameKey="country"
                         label={({ country, views }) => `${country} (${views})`}

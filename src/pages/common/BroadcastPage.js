@@ -8,7 +8,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import Cookies from "js-cookie";
 import { useRecoilState } from "recoil";
 import { setVisible } from "../../state/toastState";
-import { Calendar, Filter, SortDesc, User, Search, Clock, ChevronDown } from "lucide-react";
+import { Filter, SortDesc, Search, Clock, ChevronDown } from "lucide-react";
 
 const GET_SINGLE_BROADCAST_DETAILS = gql`
   query GetSingleBroadcaster($broadcastName: String!) {

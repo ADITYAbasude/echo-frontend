@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { Helmet } from "react-helmet-async"; // Add this import
 import VideoPlayer from "../../components/common/VideoPlayer";
 import { Share } from "lucide-react";
 import { useParams } from "react-router";
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { CircularLoader, UploaderUser, Button, LiveStreamPlayer } from "../../components";
+import { CircularLoader, UploaderUser, Button, LiveStreamPlayer, Toast } from "../../components";
 import { useVideoPlayer } from "../../hooks/useVideoPlayer";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage } from "../../components";
@@ -90,27 +90,27 @@ const VideoPage = () => {
     }
   );
 
-  const { data: videoSignedUrl, refetch: refetchSignedUrl } = useQuery(
+  const { data: videoSignedUrl, refetch: refetchSignedUrl, error: signedUrlError } = useQuery(
     GET_VIDEO_SIGNED_URL,
     {
       variables: {
         videoID: contentID,
       },
       context: {
-        headers: {
+        headers: token ? {
           Authorization: `Bearer ${token}`,
-        }
+        } : {}
       },
-      skip: !contentID || !token,
+      skip: !contentID,
       fetchPolicy: "network-only",
     }
   );
 
   useEffect(() => {
-    if (token && contentID) {
+    if (contentID) {
       refetchSignedUrl();
     }
-  }, [token, contentID, refetchSignedUrl]);
+  }, [contentID, refetchSignedUrl]);
 
   const [updateVideoViews] = useMutation(UPDATE_VIDEO_VIEWS);
 
@@ -162,6 +162,7 @@ const VideoPage = () => {
   }, []);
 
   useEffect(() => {
+    console.log("Video Data", videoData);
     if (videoData?.getVideoByID?._id) {
       updateVideoViews({
         variables: {
@@ -216,6 +217,21 @@ const VideoPage = () => {
   const posterUrl = videoData?.getVideoByID?.metaData?.posterUrl;
   const videoUrl =
     videoSignedUrl?.getVideoSignedUrl?.resolutions?.["480p"]?.masterUrl;
+
+  // Add this state for handling stream errors
+  const [streamError, setStreamError] = useState(null);
+  
+  // Add this function to handle stream errors
+  const handleStreamError = (error) => {
+    console.error("Stream playback error:", error);
+    setStreamError(error);
+  };
+  
+  // Add this function to handle stream retry
+  const handleStreamRetry = () => {
+    console.log("Retrying stream playback");
+    setStreamError(null);
+  };
 
   if (fetchingVideo) {
     return (
@@ -280,11 +296,17 @@ const VideoPage = () => {
                   ) : (
                       videoData?.getVideoByID?.isLive ? (
                         <LiveStreamPlayer
-                        stream={{
-                          url: `http://localhost:8000/hls/${videoData?.getVideoByID?.videoKey}.m3u8`,
-                          broadcasterName: videoData?.getVideoByID?.videoAddBy?.username || "Unknown",
-                          isLive: videoData?.getVideoByID?.isLive,
-                        }}
+                          stream={{
+                            url: `${process.env.REACT_APP_HLS_SERVER ? 
+                              `http://${process.env.REACT_APP_HLS_SERVER}` : 
+                              'http://localhost:8000'}/hls/${videoData?.getVideoByID?.videoKey}.m3u8`,
+                            broadcasterName: videoData?.getVideoByID?.videoAddBy?.username || "Unknown",
+                            isLive: videoData?.getVideoByID?.isLive,
+                          }}
+                          poster={videoData?.getVideoByID?.metaData?.posterUrl}
+                          onError={handleStreamError}
+                          onRetry={handleStreamRetry}
+                          showStats={false}
                         />
                       ) : (
                         <VideoPlayer

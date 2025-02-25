@@ -87,7 +87,7 @@ const VideoCard = ({
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-primary/20 shrink-0"
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/broadcast/${video.broadcast.broadcastName}`);
+              navigate(`/${video.broadcast.broadcastName}`);
             }}
           >
             {video.broadcast.broadcastImg ? (

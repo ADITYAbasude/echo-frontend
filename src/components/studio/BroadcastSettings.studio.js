@@ -63,11 +63,48 @@ const BroadcastSettings = () => {
 
       // Only include fields that have changed
       const changedFields = {};
-      if (formData.broadcastName !== broadcasterData.getBroadcaster.broadcastName) {
+      if (
+        formData.broadcastName !== broadcasterData.getBroadcaster.broadcastName
+      ) {
         changedFields.broadcastName = formData.broadcastName;
       }
-      if (formData.aboutBroadcast !== broadcasterData.getBroadcaster.aboutBroadcast) {
+      if (
+        formData.aboutBroadcast !==
+        broadcasterData.getBroadcaster.aboutBroadcast
+      ) {
         changedFields.aboutBroadcast = formData.aboutBroadcast;
+      }
+      if (selectedImage) {
+        changedFields.broadcastImg = selectedImage;
+      }
+
+      const input = {
+        ...changedFields,
+        broadcastImg: null,
+      };
+
+      const operations = {
+        query: `mutation UpdateBroadcast($input: updateBroadcastInput!) {
+                updateBroadcast(input: $input) {
+                  success
+                  message
+                }
+              }`,
+        variables: {
+          input,
+        },
+      };
+
+      const map = {
+        0: ["variables.input.broadcastImg"],
+      };
+
+      const formDataSrc = new FormData();
+      formDataSrc.append("operations", JSON.stringify(operations));
+      formDataSrc.append("map", JSON.stringify(map));
+
+      if (selectedImage) {
+        formDataSrc.append("0", selectedImage);
       }
 
       // Only proceed if there are changes
@@ -77,21 +114,11 @@ const BroadcastSettings = () => {
           {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
               token: `Bearer ${Cookies.get("broadcastToken")}`,
+              'x-apollo-operation-name': 'UpdateBroadcast',
             },
-            body: JSON.stringify({
-              query: `mutation UpdateBroadcast($input: updateBroadcastInput!) {
-                updateBroadcast(input: $input) {
-                  success
-                  message
-                }
-              }`,
-              variables: {
-                input: changedFields,
-              },
-            }),
+            body: formDataSrc
           }
         );
 
@@ -133,14 +160,14 @@ const BroadcastSettings = () => {
       <div className="max-w-3xl mx-auto">
         <div className="bg-[var(--card-background)] rounded-lg border border-white/5">
           <div className="h-1 w-full bg-gradient-to-r from-primary/80 to-primary/20"></div>
-          
+
           <form onSubmit={handleSubmit} className="p-4 sm:p-6">
             {/* Profile Image Section */}
             <div className="mb-6 sm:mb-8">
               <label className="block text-sm font-medium text-white/80 mb-4">
                 Broadcast Image
               </label>
-              
+
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                 <div className="relative group mx-auto sm:mx-0">
                   <input
@@ -153,21 +180,28 @@ const BroadcastSettings = () => {
                       if (file) setSelectedImage(file);
                     }}
                   />
-                  
-                  <div 
+
+                  <div
                     onClick={handleImagePicker}
                     className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-sm overflow-hidden cursor-pointer 
                       border border-white/10 group-hover:border-primary/30 transition-colors"
                   >
-                    {selectedImage || broadcasterData?.getBroadcaster?.broadcastImg ? (
+                    {selectedImage ||
+                    broadcasterData?.getBroadcaster?.broadcastImg ? (
                       <img
-                        src={selectedImage ? URL.createObjectURL(selectedImage) : broadcasterData.getBroadcaster.broadcastImg}
+                        src={
+                          selectedImage
+                            ? URL.createObjectURL(selectedImage)
+                            : broadcasterData.getBroadcaster.broadcastImg
+                        }
                         alt="Broadcast"
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-3 
-                        bg-[var(--card-background)] group-hover:bg-primary/5 transition-colors">
+                      <div
+                        className="w-full h-full flex flex-col items-center justify-center gap-3 
+                        bg-[var(--card-background)] group-hover:bg-primary/5 transition-colors"
+                      >
                         <div className="p-3 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
                           <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                         </div>
@@ -177,7 +211,9 @@ const BroadcastSettings = () => {
                 </div>
 
                 <div className="flex-1 text-center sm:text-left">
-                  <p className="text-sm text-white/90 mb-1">Upload broadcast image</p>
+                  <p className="text-sm text-white/90 mb-1">
+                    Upload broadcast image
+                  </p>
                   <p className="text-xs text-white/50">
                     Recommended: Square image, at least 400x400px
                   </p>
@@ -196,10 +232,15 @@ const BroadcastSettings = () => {
                     border border-white/10 text-white/90 placeholder:text-white/30 caret-primary 
                     focus:border-primary/30 transition-colors text-sm sm:text-base"
                   value={formData.broadcastName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, broadcastName: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      broadcastName: e.target.value,
+                    }))
+                  }
                 />
               </div>
-              
+
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-white/80">
                   About Broadcast
@@ -210,14 +251,19 @@ const BroadcastSettings = () => {
                     placeholder:text-white/30 caret-primary resize-y focus:border-primary/30 
                     transition-colors text-sm sm:text-base"
                   value={formData.aboutBroadcast}
-                  onChange={(e) => setFormData(prev => ({ ...prev, aboutBroadcast: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      aboutBroadcast: e.target.value,
+                    }))
+                  }
                 />
               </div>
             </div>
 
             {/* Submit Button */}
             <div className="flex justify-end mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/5">
-              <Button 
+              <Button
                 className="min-w-[120px] sm:min-w-[130px] text-sm bg-primary hover:bg-primary/90 
                   transition-colors"
                 disabled={isUpdating}
